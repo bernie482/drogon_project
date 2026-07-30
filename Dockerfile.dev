@@ -1,0 +1,78 @@
+# ==========================================
+# Build Stage
+# ==========================================
+FROM ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    git \
+    gcc \
+    g++ \
+    make \
+    cmake \
+    wget \
+    libjsoncpp-dev \
+    uuid-dev \
+    openssl \
+    libssl-dev \
+    zlib1g-dev \
+    postgresql-server-dev-all \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /tmp
+RUN git clone https://github.com/drogonframework/drogon && \
+    cd drogon && \
+    git submodule update --init && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    make -j$(nproc) && \
+    make install
+
+WORKDIR /app
+ENV PATH="/usr/local/bin:${PATH}"
+
+COPY CMakeLists.txt .
+COPY main.cc .
+COPY controllers/ controllers/
+COPY views/ views/
+COPY config.json .
+
+RUN mkdir -p build && cd build && \
+    cmake .. && \
+    make -j$(nproc)
+
+# ==========================================
+# Runtime Stage
+# ==========================================
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y \
+    libjsoncpp25 \
+    libuuid1 \
+    libssl3 \
+    zlib1g \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY config.json /app/config.json
+COPY views/ /app/views/
+
+COPY --from=builder /app/build/drogon_server /app/server
+
+RUN groupadd -r appuser && useradd -r -g appuser appuser && \
+    chown -R appuser:appuser /app
+
+USER appuser
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8080/api/hello || exit 1
+
+CMD ["./server"]

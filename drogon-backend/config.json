@@ -1,0 +1,31 @@
+{
+    "listeners": [
+        {
+            "address": "0.0.0.0",
+            "port": 9090,
+            "https": false
+        }
+    ],
+    "db_clients": [
+        {
+            "name": "default",
+            "rdbms": "postgresql",
+            "host": "db",
+            "port": 5432,
+            "dbname": "myapp",
+            "user": "admin",
+            "passwd": "password",
+            "is_fast": false,
+            "number_of_connections": 5
+        }
+    ],
+    "app": {
+        "number_of_threads": 1,
+        "enable_session": true,
+        "session_timeout": 600,
+        "log": {
+            "log_level": "DEBUG"
+        },
+        "run_as_daemon": false
+    }
+}

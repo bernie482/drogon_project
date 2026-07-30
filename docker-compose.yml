@@ -1,0 +1,19 @@
+services:
+  drogon-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+      target: builder
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - build-cache:/app/build
+    working_dir: /app
+    environment:
+      - CMAKE_BUILD_TYPE=Debug
+      - DROGON_LOG_LEVEL=TRACE
+    command: bash -c "cd /app && mkdir -p build && cd build && cmake .. && make && ./drogon_server"
+
+volumes:
+  build-cache:
